@@ -10,12 +10,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Checkout the repository
-      - name: Checkout the repository
+      # Step 1: Checkout the repository and only the main branch
+      - name: Checkout main branch only
         uses: actions/checkout@v3
         with:
-          # Disable automatic checkout
-          fetch-depth: 0
+          fetch-depth: 0  # Fetch all history but only for the specified branch
+          ref: main  # Specify the branch to checkout
 
       # Step 2: Set up sparse checkout
       - name: Set up Sparse Checkout
@@ -25,13 +25,13 @@ jobs:
 
       # Step 3: Add the upstream repository
       - name: Add Upstream Remote
-        run: git remote add upstream https://github.com/TRaSH-Guides/Guides.git
+        run: git remote add upstream https://github.com/ORIGINAL_OWNER/ORIGINAL_REPO.git
 
-      # Step 4: Fetch and merge upstream changes
+      # Step 4: Fetch and Merge Upstream Changes
       - name: Fetch and Merge Upstream Changes
         run: |
-          git fetch upstream
-          git rebase upstream/main
+          git fetch upstream main  # Only fetch the main branch from upstream
+          git merge upstream/main --allow-unrelated-histories  # Merge changes from upstream's main
 
       # Step 5: Push the changes to your forked repository
       - name: Push Changes
