@@ -1,0 +1,41 @@
+name: Sync Custom Formats from Upstream
+
+on:
+  schedule:
+    - cron: '0 1 * * *'  # Runs at 1:00 AM UTC every day
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout the repository
+      - name: Checkout the repository
+        uses: actions/checkout@v3
+        with:
+          # Disable automatic checkout
+          fetch-depth: 0
+
+      # Step 2: Set up sparse checkout
+      - name: Set up Sparse Checkout
+        run: |
+          git sparse-checkout init --cone
+          git sparse-checkout set docs/json/radarr docs/json/sonarr
+
+      # Step 3: Add the upstream repository
+      - name: Add Upstream Remote
+        run: git remote add upstream https://github.com/TRaSH-Guides/Guides.git
+
+      # Step 4: Fetch and merge upstream changes
+      - name: Fetch and Merge Upstream Changes
+        run: |
+          git fetch upstream
+          git merge upstream/main --allow-unrelated-histories
+
+      # Step 5: Push the changes to your forked repository
+      - name: Push Changes
+        run: |
+          git push origin main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
