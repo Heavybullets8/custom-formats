@@ -25,7 +25,7 @@ jobs:
 
       # Step 3: Add the upstream repository
       - name: Add Upstream Remote
-        run: git remote add upstream https://github.com/ORIGINAL_OWNER/ORIGINAL_REPO.git
+        run: git remote add upstream https://github.com/TRaSH-Guides/Guides.git
 
       # Step 4: Fetch and Merge Upstream Changes
       - name: Fetch and Merge Upstream Changes
