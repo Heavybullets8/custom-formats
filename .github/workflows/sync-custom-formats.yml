@@ -21,7 +21,7 @@ jobs:
       - name: Set up Sparse Checkout
         run: |
           git sparse-checkout init --cone
-          git sparse-checkout set metadata.json docs/json/radarr docs/json/sonarr docs/Radarr/Radarr-collection-of-custom-formats.md docs/Sonarr/sonarr-collection-of-custom-formats.md
+          git sparse-checkout set docs/json/radarr docs/json/sonarr
 
       # Step 3: Add the upstream repository
       - name: Add Upstream Remote
