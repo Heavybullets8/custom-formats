@@ -33,11 +33,12 @@ jobs:
           git config user.name "GitHub Action"
           git config user.email "action@github.com"
 
-      # Step 5: Fetch and Merge Upstream Changes
-      - name: Fetch and Merge Upstream Changes
+      # Step 5: Fetch and squash-merge upstream changes (only sync files in sparse-checkout)
+      - name: Fetch and Squash-Merge Upstream Changes
         run: |
           git fetch upstream master
-          git merge upstream/master --allow-unrelated-histories
+          git merge --squash upstream/master
+          git commit -m "Sync changes from upstream"
 
       # Step 6: Push the changes to your forked repository
       - name: Push Changes
