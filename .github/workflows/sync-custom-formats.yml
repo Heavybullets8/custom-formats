@@ -10,8 +10,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Checkout the repository and only the master branch
-      - name: Checkout master branch only
+      # Step 1: Checkout the repository
+      - name: Checkout repository with sparse checkout
         uses: actions/checkout@v3
         with:
           fetch-depth: 0  # Fetch all history but only for the specified branch
@@ -20,8 +20,9 @@ jobs:
       # Step 2: Set up sparse checkout
       - name: Set up Sparse Checkout
         run: |
-          git sparse-checkout init --cone
-          git sparse-checkout set docs/json/radarr docs/json/sonarr
+          git config core.sparseCheckout true
+          echo "docs/json/radarr/" >> .git/info/sparse-checkout
+          echo "docs/json/sonarr/" >> .git/info/sparse-checkout
 
       # Step 3: Add the upstream repository
       - name: Add Upstream Remote
@@ -33,14 +34,19 @@ jobs:
           git config user.name "GitHub Action"
           git config user.email "action@github.com"
 
-      # Step 5: Fetch and squash-merge upstream changes (only sync files in sparse-checkout)
-      - name: Fetch and Squash-Merge Upstream Changes
+      # Step 5: Fetch and Merge Upstream Changes
+      - name: Fetch and Merge Upstream Changes
         run: |
           git fetch upstream master
-          git merge --squash upstream/master
-          git commit -m "Sync changes from upstream"
+          git merge upstream/master --allow-unrelated-histories
 
-      # Step 6: Push the changes to your forked repository
+      # Step 6: Commit the changes (if there are any)
+      - name: Commit Changes
+        run: |
+          git add .
+          git commit -m "Sync changes from upstream" || echo "No changes to commit"
+
+      # Step 7: Push the changes to your forked repository
       - name: Push Changes
         run: |
           git push origin master
