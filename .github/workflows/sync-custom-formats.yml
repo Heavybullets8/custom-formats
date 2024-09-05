@@ -27,13 +27,19 @@ jobs:
       - name: Add Upstream Remote
         run: git remote add upstream https://github.com/TRaSH-Guides/Guides.git
 
-      # Step 4: Fetch and Merge Upstream Changes
+      # Step 4: Set Git User Identity
+      - name: Set Git User Identity
+        run: |
+          git config user.name "GitHub Action"
+          git config user.email "action@github.com"
+
+      # Step 5: Fetch and Merge Upstream Changes
       - name: Fetch and Merge Upstream Changes
         run: |
           git fetch upstream master
           git merge upstream/master --allow-unrelated-histories
 
-      # Step 5: Push the changes to your forked repository
+      # Step 6: Push the changes to your forked repository
       - name: Push Changes
         run: |
           git push origin master
