@@ -65,7 +65,7 @@ jobs:
       - name: Generate Diff
         id: generate_diff
         run: |
-          git diff origin/main...HEAD > diff.txt
+          git diff origin/master...HEAD > diff.txt
           echo "diff<<EOF" >> $GITHUB_OUTPUT
           cat diff.txt >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
