@@ -10,45 +10,62 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Checkout the repository
-      - name: Checkout repository with sparse checkout
+      # Step 1: Checkout your repository
+      - name: Checkout Your Repository
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0  # Fetch all history but only for the specified branch
-          ref: master  # Specify the branch to checkout
+          fetch-depth: 0  # Fetch all history
 
-      # Step 2: Set up sparse checkout
-      - name: Set up Sparse Checkout
+      # Step 2: Sparse checkout of the upstream repository in pattern mode
+      - name: Sparse Checkout Upstream Repository
         run: |
-          git config core.sparseCheckout true
-          echo "docs/json/radarr/" >> .git/info/sparse-checkout
-          echo "docs/json/sonarr/" >> .git/info/sparse-checkout
+          git clone --depth 1 --filter=blob:none --sparse https://github.com/TRaSH-Guides/Guides.git upstream_repo
+          cd upstream_repo
+          git sparse-checkout init --no-cone
+          echo '/docs/json/radarr/*' >> .git/info/sparse-checkout
+          echo '/docs/json/sonarr/*' >> .git/info/sparse-checkout
+          echo '/docs/Radarr/Radarr-collection-of-custom-formats.md' >> .git/info/sparse-checkout
+          echo '/docs/Sonarr/sonarr-collection-of-custom-formats.md' >> .git/info/sparse-checkout
+          git checkout
 
-      # Step 3: Add the upstream repository
-      - name: Add Upstream Remote
-        run: git remote add upstream https://github.com/TRaSH-Guides/Guides.git
+      # Step 3: Synchronize directories and files from upstream, excluding custom files
+      - name: Sync Directories and Files from Upstream
+        run: |
+          # Sync directories while excluding custom files
+          rsync -av --delete \
+            --exclude='cf/custom-language-not-original-or-english.json' \
+            --exclude='cf/custom-release-title-dubbed.json' \
+            upstream_repo/docs/json/radarr/ docs/json/radarr/
+          rsync -av --delete \
+            --exclude='cf/custom-language-not-original-or-english.json' \
+            --exclude='cf/custom-release-title-dubbed.json' \
+            upstream_repo/docs/json/sonarr/ docs/json/sonarr/
+          # Sync specific files
+          mkdir -p docs/Radarr docs/Sonarr
+          rsync -av upstream_repo/docs/Radarr/Radarr-collection-of-custom-formats.md docs/Radarr/
+          rsync -av upstream_repo/docs/Sonarr/sonarr-collection-of-custom-formats.md docs/Sonarr/
 
-      # Step 4: Set Git User Identity
-      - name: Set Git User Identity
+      # Step 4: Configure Git
+      - name: Configure Git
         run: |
           git config user.name "GitHub Action"
           git config user.email "action@github.com"
 
-      # Step 5: Fetch and Checkout Specific Directories from Upstream
-      - name: Fetch and Checkout Upstream Changes
-        run: |
-          git fetch upstream master
-          git checkout upstream/master -- docs/json/radarr docs/json/sonarr
-
-      # Step 6: Commit the changes (if there are any)
+      # Step 5: Commit changes if there are any
       - name: Commit Changes
         run: |
           git add .
-          git commit -m "Sync changes from upstream" || echo "No changes to commit"
+          git diff --cached --quiet || git commit -m "Sync changes from upstream"
 
-      # Step 7: Push the changes to your forked repository
-      - name: Push Changes
-        run: |
-          git push origin master
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # Step 6: Create or Update Pull Request
+      - name: Create or Update Pull Request
+        uses: peter-evans/create-pull-request@v5
+        with:
+          branch: sync-upstream
+          commit-message: Sync changes from upstream
+          title: 'Sync changes from upstream'
+          body: |
+            ## Changes
+            {{CHANGELOG}}
+          labels: 'automated update'
+          assignees: 'Heavybullets8'
