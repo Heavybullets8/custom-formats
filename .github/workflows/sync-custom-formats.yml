@@ -45,19 +45,32 @@ jobs:
           rsync -av upstream_repo/docs/Radarr/Radarr-collection-of-custom-formats.md docs/Radarr/
           rsync -av upstream_repo/docs/Sonarr/sonarr-collection-of-custom-formats.md docs/Sonarr/
 
-      # Step 4: Configure Git
+      # Step 4: Remove Upstream Repository
+      - name: Remove Upstream Repository
+        run: rm -rf upstream_repo
+
+      # Step 5: Configure Git
       - name: Configure Git
         run: |
           git config user.name "GitHub Action"
           git config user.email "action@github.com"
 
-      # Step 5: Commit changes if there are any
+      # Step 6: Commit changes if there are any
       - name: Commit Changes
         run: |
           git add .
           git diff --cached --quiet || git commit -m "Sync changes from upstream"
 
-      # Step 6: Create or Update Pull Request
+      # Step 7: Generate Diff
+      - name: Generate Diff
+        id: generate_diff
+        run: |
+          git diff origin/main...HEAD > diff.txt
+          echo "diff<<EOF" >> $GITHUB_OUTPUT
+          cat diff.txt >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      # Step 8: Create or Update Pull Request
       - name: Create or Update Pull Request
         uses: peter-evans/create-pull-request@v5
         with:
@@ -66,6 +79,9 @@ jobs:
           title: 'Sync changes from upstream'
           body: |
             ## Changes
-            {{CHANGELOG}}
+
+            ```diff
+            ${{ steps.generate_diff.outputs.diff }}
+            ```
           labels: 'automated update'
           assignees: 'Heavybullets8'
