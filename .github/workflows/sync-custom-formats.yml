@@ -69,6 +69,7 @@ jobs:
           echo "diff<<EOF" >> $GITHUB_OUTPUT
           cat diff.txt >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
+          rm diff.txt
 
       # Step 8: Create or Update Pull Request
       - name: Create or Update Pull Request
