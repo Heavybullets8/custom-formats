@@ -9,19 +9,21 @@
     {
       "name": "Not Original",
       "implementation": "LanguageSpecification",
-      "negate": true,
+      "negate": false,
       "required": true,
       "fields": {
-        "value": -2
+        "value": -2,
+        "exceptLanguage": true
       }
     },
     {
       "name": "Not English",
       "implementation": "LanguageSpecification",
-      "negate": true,
+      "negate": false,
       "required": true,
       "fields": {
-        "value": 1
+        "value": 1,
+        "exceptLanguage": true
       }
     }
   ]
