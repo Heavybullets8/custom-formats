@@ -95,7 +95,7 @@ jobs:
               if [ -n "$exclude_files" ] && [ "$exclude_files" != "null" ]; then
                 readarray -t exclude_array <<< "$exclude_files"
                 for filename in "${exclude_array[@]}"; do
-                  EXCLUDE_ARGS+=(--exclude="$path/$filename")
+                  EXCLUDE_ARGS+=(--exclude="$filename")
                 done
               fi
 

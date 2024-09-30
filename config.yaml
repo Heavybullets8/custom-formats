@@ -1,6 +1,9 @@
 radarr:
   custom_formats:
     path: "docs/json/radarr/cf"
+    exclude:
+      - "custom-language-not-original-or-english.json"
+      - "custom-release-title-dubbed.json"
   qualities:
     path: "docs/json/radarr/quality-size"
   naming:
@@ -9,13 +12,13 @@ radarr:
     path: "docs/json/radarr/quality-profiles"
   custom_format_groups:
     path: "docs/json/radarr/cf-groups"
-    exclude:
-      - "custom-language-not-original-or-english.json"
-      - "custom-release-title-dubbed.json"
 
 sonarr:
   custom_formats:
     path: "docs/json/sonarr/cf"
+    exclude:
+      - "custom-language-not-original-or-english.json"
+      - "custom-release-title-dubbed.json"
   qualities:
     path: "docs/json/sonarr/quality-size"
   naming:
@@ -24,9 +27,6 @@ sonarr:
     path: "docs/json/sonarr/quality-profiles"
   custom_format_groups:
     path: "docs/json/sonarr/cf-groups"
-    exclude:
-      - "custom-language-not-original-or-english.json"
-      - "custom-release-title-dubbed.json"
 
 additional_sync:
   - "docs/Radarr/Radarr-collection-of-custom-formats.md"
