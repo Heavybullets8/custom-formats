@@ -40,8 +40,7 @@ radarr:
   custom_format_groups:
     path: "docs/json/radarr/cf-groups"
     exclude:
-      - "custom-language-not-original-or-english.json"
-      - "custom-release-title-dubbed.json"
+      - "custom-format-group-1.json"
 
 sonarr:
   custom_formats:
@@ -61,8 +60,7 @@ sonarr:
   custom_format_groups:
     path: "docs/json/sonarr/cf-groups"
     exclude:
-      - "custom-language-not-original-or-english.json"
-      - "custom-release-title-dubbed.json"
+      - "custom-format-group-1.json"
 
 additional_sync:
   - "docs/Radarr/Radarr-collection-of-custom-formats.md"
