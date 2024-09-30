@@ -16,7 +16,7 @@ jobs:
 
     steps:
       - name: Checkout Your Repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Sparse Checkout Upstream Repository
         run: |
@@ -95,7 +95,7 @@ jobs:
               if [ -n "$exclude_files" ] && [ "$exclude_files" != "null" ]; then
                 readarray -t exclude_array <<< "$exclude_files"
                 for filename in "${exclude_array[@]}"; do
-                  EXCLUDE_ARGS+=(--exclude="$filename")
+                  EXCLUDE_ARGS+=(--exclude="$path/$filename")
                 done
               fi
 
@@ -139,7 +139,7 @@ jobs:
 
       # TODO: Change from pull to commit once tested
       - name: Create or Update Pull Request
-        uses: peter-evans/create-pull-request@v5
+        uses: peter-evans/create-pull-request@v7
         with:
           branch: sync-upstream
           commit-message: Sync changes from upstream

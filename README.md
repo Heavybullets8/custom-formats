@@ -77,7 +77,7 @@ additional_sync:
   - **`path`**: The directory path where the files for that subkey are located.
   - **`exclude` (optional)**: A list of filenames to **exclude** from synchronization. This prevents your custom files from being overwritten during the sync process.
 
-- **`additional_sync`**: Specifies additional files to synchronize from the upstream repository. By default, it includes certain markdown files and `metadata.json`. You can add or remove files as needed.
+- **`additional_sync`**: Specifies additional files to synchronize from the upstream repository. By default, it includes files required by Recyclarr to verify the repository.
 
 #### **Customizing Your Configuration**
 
