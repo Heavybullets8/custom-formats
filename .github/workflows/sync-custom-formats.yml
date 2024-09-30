@@ -8,6 +8,11 @@ on:
 jobs:
   sync:
     runs-on: ubuntu-latest
+    env:
+      CONFIG_YAML: config.yaml
+      UPSTREAM_METADATA: upstream_repo/metadata.json
+      GROUPS: "radarr sonarr"
+      SUBKEYS: "custom_formats qualities naming quality_profiles custom_format_groups"
 
     steps:
       - name: Checkout Your Repository
@@ -15,14 +20,12 @@ jobs:
 
       - name: Sparse Checkout Upstream Repository
         run: |
-          CONFIG_YAML="config.yaml"
-
           git clone --depth 1 --filter=blob:none --sparse https://github.com/TRaSH-Guides/Guides.git upstream_repo
           git -C upstream_repo sparse-checkout init --no-cone
-          
-          groups=("radarr" "sonarr")
+
+          groups=($GROUPS)
           for group in "${groups[@]}"; do
-            paths=$(jq -r ".json_paths.$group[] | .[]" upstream_repo/metadata.json)
+            paths=$(jq -r ".json_paths.$group[] | .[]" "$UPSTREAM_METADATA")
             while IFS= read -r path; do
               echo "$path/*" >> upstream_repo/.git/info/sparse-checkout
             done <<< "$paths"
@@ -38,27 +41,23 @@ jobs:
       - name: Compare and Update Paths
         run: |
           set -e
-      
-          UPSTREAM_METADATA="upstream_repo/metadata.json"
-          CONFIG_YAML="config.yaml"
 
-          groups=("radarr" "sonarr")
-          subkeys=("custom_formats" "qualities" "naming" "quality_profiles" "custom_format_groups")
+          groups=($GROUPS)
+          subkeys=($SUBKEYS)
 
           update_config_yaml() {
             local group=$1
             local subkey=$2
             local new_path=$3
-      
-            yq eval ".$group.$subkey = [\"$new_path\"]" -i "$CONFIG_YAML"
+
+            yq eval ".$group.$subkey.path = \"$new_path\"" -i "$CONFIG_YAML"
           }
-      
+
           for group in "${groups[@]}"; do
             for subkey in "${subkeys[@]}"; do
-              # Extract paths from config.yaml and metadata.json
-              my_path=$(yq eval ".$group.$subkey[0]" "$CONFIG_YAML")
+              my_path=$(yq eval -r ".$group.$subkey.path" "$CONFIG_YAML")
               upstream_path=$(jq -r ".json_paths.$group.$subkey[0]" "$UPSTREAM_METADATA")
-      
+
               if [ "$my_path" != "$upstream_path" ]; then
                 echo "Path mismatch for $group.$subkey:"
                 echo "  My path: $my_path"
@@ -75,35 +74,27 @@ jobs:
 
             done
           done
+        shell: bash
 
       - name: Sync Directories and Files from Upstream
         run: |
           set -e
 
-          CONFIG_YAML="config.yaml"
-
-          readarray -t CUSTOM_PATHS <<< "$(yq eval '.custom[]' "$CONFIG_YAML")"
-
-          declare -A EXCLUDE_FILES
-          for custom_path in "${CUSTOM_PATHS[@]}"; do
-            dir_path=$(dirname "$custom_path")
-            file_name=$(basename "$custom_path")
-            EXCLUDE_FILES["$dir_path"]+="$file_name "
-          done
-
-          groups=("radarr" "sonarr")
-          subkeys=("custom_formats" "qualities" "naming" "quality_profiles" "custom_format_groups")
+          groups=($GROUPS)
+          subkeys=($SUBKEYS)
 
           for group in "${groups[@]}"; do
             for subkey in "${subkeys[@]}"; do
-              path=$(yq eval ".$group.$subkey[0]" "$CONFIG_YAML")
+              path=$(yq eval -r ".$group.$subkey.path" "$CONFIG_YAML")
 
               src="upstream_repo/$path/"
               dest="$path/"
 
               EXCLUDE_ARGS=()
-              if [[ -n "${EXCLUDE_FILES[$path]}" ]]; then
-                for filename in ${EXCLUDE_FILES[$path]}; do
+              exclude_files=$(yq eval ".$group.$subkey.exclude[]" "$CONFIG_YAML")
+              if [ -n "$exclude_files" ] && [ "$exclude_files" != "null" ]; then
+                readarray -t exclude_array <<< "$exclude_files"
+                for filename in "${exclude_array[@]}"; do
                   EXCLUDE_ARGS+=(--exclude="$filename")
                 done
               fi
