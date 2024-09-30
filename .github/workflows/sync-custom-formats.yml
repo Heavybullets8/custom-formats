@@ -16,34 +16,111 @@ jobs:
         with:
           fetch-depth: 0  # Fetch all history
 
-      # Step 2: Sparse checkout of the upstream repository in pattern mode
+      # Step 2: Sparse checkout of the upstream repository using metadata.json
       - name: Sparse Checkout Upstream Repository
         run: |
           git clone --depth 1 --filter=blob:none --sparse https://github.com/TRaSH-Guides/Guides.git upstream_repo
-          cd upstream_repo
-          git sparse-checkout init --no-cone
-          echo '/docs/json/radarr/*' >> .git/info/sparse-checkout
-          echo '/docs/json/sonarr/*' >> .git/info/sparse-checkout
-          echo '/docs/Radarr/Radarr-collection-of-custom-formats.md' >> .git/info/sparse-checkout
-          echo '/docs/Sonarr/sonarr-collection-of-custom-formats.md' >> .git/info/sparse-checkout
-          git checkout
+          git -C upstream_repo sparse-checkout init --no-cone
+          
+          groups=("radarr" "sonarr")
+          for group in "${groups[@]}"; do
+            paths=$(jq -r ".json_paths.$group[] | .[]" upstream_repo/metadata.json)
+            while IFS= read -r path; do
+              echo "$path/*" >> upstream_repo/.git/info/sparse-checkout
+            done <<< "$paths"
+          done
+
+          git -C upstream_repo checkout
+
+      - name: Compare and Update Paths
+        run: |
+          set -e
+      
+          UPSTREAM_METADATA="upstream_repo/metadata.json"
+          CONFIG_YAML="config.yaml"
+
+          groups=("radarr" "sonarr")
+          subkeys=("custom_formats" "qualities" "naming" "quality_profiles" "custom_format_groups")
+
+          update_config_yaml() {
+            local group=$1
+            local subkey=$2
+            local new_path=$3
+      
+            yq eval ".$group.$subkey = [\"$new_path\"]" -i "$CONFIG_YAML"
+          }
+      
+          for group in "${groups[@]}"; do
+            for subkey in "${subkeys[@]}"; do
+              # Extract paths from config.yaml and metadata.json
+              my_path=$(yq eval ".$group.$subkey[0]" "$CONFIG_YAML")
+              upstream_path=$(jq -r ".json_paths.$group.$subkey[0]" "$UPSTREAM_METADATA")
+      
+              if [ "$my_path" != "$upstream_path" ]; then
+                echo "Path mismatch for $group.$subkey:"
+                echo "  My path: $my_path"
+                echo "  Upstream path: $upstream_path"
+                mkdir -p "$upstream_path"
+                echo "Moving files from $my_path to $upstream_path..."
+                mv "$my_path"/* "$upstream_path"/ || echo "No files to move from $my_path."
+                rmdir "$my_path"
+                update_config_yaml "$group" "$subkey" "$upstream_path"
+                echo "Moved files and updated config.yaml for $group.$subkey."
+              else
+                echo "Paths for $group.$subkey are the same. No action needed."
+              fi
+
+            done
+          done
 
       # Step 3: Synchronize directories and files from upstream, excluding custom files
       - name: Sync Directories and Files from Upstream
         run: |
-          # Sync directories while excluding custom files
-          rsync -av --delete \
-            --exclude='cf/custom-language-not-original-or-english.json' \
-            --exclude='cf/custom-release-title-dubbed.json' \
-            upstream_repo/docs/json/radarr/ docs/json/radarr/
-          rsync -av --delete \
-            --exclude='cf/custom-language-not-original-or-english.json' \
-            --exclude='cf/custom-release-title-dubbed.json' \
-            upstream_repo/docs/json/sonarr/ docs/json/sonarr/
-          # Sync specific files
-          mkdir -p docs/Radarr docs/Sonarr
-          rsync -av upstream_repo/docs/Radarr/Radarr-collection-of-custom-formats.md docs/Radarr/
-          rsync -av upstream_repo/docs/Sonarr/sonarr-collection-of-custom-formats.md docs/Sonarr/
+          set -e
+
+          CONFIG_YAML="config.yaml"
+
+          readarray -t CUSTOM_PATHS <<< "$(yq eval '.custom[]' "$CONFIG_YAML")"
+
+          declare -A EXCLUDE_FILES
+          for custom_path in "${CUSTOM_PATHS[@]}"; do
+            dir_path=$(dirname "$custom_path")
+            file_name=$(basename "$custom_path")
+            EXCLUDE_FILES["$dir_path"]+="$file_name "
+          done
+
+          groups=("radarr" "sonarr")
+          subkeys=("custom_formats" "qualities" "naming" "quality_profiles" "custom_format_groups")
+
+          for group in "${groups[@]}"; do
+            for subkey in "${subkeys[@]}"; do
+              path=$(yq eval ".$group.$subkey[0]" "$CONFIG_YAML")
+
+              src="upstream_repo/$path/"
+              dest="$path/"
+
+              EXCLUDE_ARGS=()
+              if [[ -n "${EXCLUDE_FILES[$path]}" ]]; then
+                for filename in ${EXCLUDE_FILES[$path]}; do
+                  EXCLUDE_ARGS+=(--exclude="$filename")
+                done
+              fi
+
+              echo "Syncing $src to $dest"
+              rsync -av --delete "${EXCLUDE_ARGS[@]}" "$src" "$dest"
+            done
+          done
+
+          readarray -t ADDITIONAL_SYNC <<< "$(yq eval '.additional_sync[]' "$CONFIG_YAML")"
+
+          for file_path in "${ADDITIONAL_SYNC[@]}"; do
+            dest_dir=$(dirname "$file_path")
+            mkdir -p "$dest_dir"
+
+            echo "Syncing $file_path"
+            rsync -av "upstream_repo/$file_path" "$file_path"
+          done
+        shell: bash
 
       # Step 4: Remove Upstream Repository
       - name: Remove Upstream Repository
@@ -71,6 +148,7 @@ jobs:
           echo "EOF" >> $GITHUB_OUTPUT
           rm diff.txt
 
+      # TODO: Change from pull to commit once tested
       # Step 8: Create or Update Pull Request
       - name: Create or Update Pull Request
         uses: peter-evans/create-pull-request@v5

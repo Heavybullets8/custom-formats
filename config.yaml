@@ -1,0 +1,34 @@
+radarr:
+  custom_formats:
+    - "docs/json/radarr/cf"
+  qualities:
+    - "docs/json/radarr/quality-size"
+  naming:
+    - "docs/json/radarr/naming"
+  quality_profiles:
+    - "docs/json/radarr/quality-profiles"
+  custom_format_groups:
+    - "docs/json/radarr/cf-groups"
+
+sonarr:
+  custom_formats:
+    - "docs/json/sonarr/cf"
+  qualities:
+    - "docs/json/sonarr/quality-size"
+  naming:
+    - "docs/json/sonarr/naming"
+  quality_profiles:
+    - "docs/json/sonarr/quality-profiles"
+  custom_format_groups:
+    - "docs/json/sonarr/cf-groups"
+
+custom:
+  - "docs/json/radarr/cf/custom-language-not-original-or-english.json"
+  - "docs/json/radarr/cf/custom-release-title-dubbed.json"
+  - "docs/json/sonarr/cf/custom-language-not-original-or-english.json"
+  - "docs/json/sonarr/cf/custom-release-title-dubbed.json"
+
+additional_sync:
+  - "docs/Radarr/Radarr-collection-of-custom-formats.md"
+  - "docs/Sonarr/sonarr-collection-of-custom-formats.md"
+  - "metadata.json"
