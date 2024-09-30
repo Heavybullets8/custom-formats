@@ -10,13 +10,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Checkout your repository
       - name: Checkout Your Repository
         uses: actions/checkout@v3
-        with:
-          fetch-depth: 0  # Fetch all history
 
-      # Step 2: Sparse checkout of the upstream repository using metadata.json
       - name: Sparse Checkout Upstream Repository
         run: |
           git clone --depth 1 --filter=blob:none --sparse https://github.com/TRaSH-Guides/Guides.git upstream_repo
@@ -28,6 +24,11 @@ jobs:
             while IFS= read -r path; do
               echo "$path/*" >> upstream_repo/.git/info/sparse-checkout
             done <<< "$paths"
+          done
+
+          readarray -t ADDITIONAL_SYNC <<< "$(yq eval '.additional_sync[]' "$CONFIG_YAML")"
+          for file_path in "${ADDITIONAL_SYNC[@]}"; do
+            echo "$file_path" >> upstream_repo/.git/info/sparse-checkout
           done
 
           git -C upstream_repo checkout
@@ -73,7 +74,6 @@ jobs:
             done
           done
 
-      # Step 3: Synchronize directories and files from upstream, excluding custom files
       - name: Sync Directories and Files from Upstream
         run: |
           set -e
@@ -122,23 +122,19 @@ jobs:
           done
         shell: bash
 
-      # Step 4: Remove Upstream Repository
       - name: Remove Upstream Repository
         run: rm -rf upstream_repo
 
-      # Step 5: Configure Git
       - name: Configure Git
         run: |
           git config user.name "GitHub Action"
           git config user.email "action@github.com"
 
-      # Step 6: Commit changes if there are any
       - name: Commit Changes
         run: |
           git add .
           git diff --cached --quiet || git commit -m "Sync changes from upstream"
 
-      # Step 7: Generate Diff
       - name: Generate Diff
         id: generate_diff
         run: |
@@ -149,7 +145,6 @@ jobs:
           rm diff.txt
 
       # TODO: Change from pull to commit once tested
-      # Step 8: Create or Update Pull Request
       - name: Create or Update Pull Request
         uses: peter-evans/create-pull-request@v5
         with:
