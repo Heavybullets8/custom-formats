@@ -22,13 +22,13 @@ sonarr:
   custom_format_groups:
     - "docs/json/sonarr/cf-groups"
 
+additional_sync:
+  - "docs/Radarr/Radarr-collection-of-custom-formats.md"
+  - "docs/Sonarr/sonarr-collection-of-custom-formats.md"
+  - "metadata.json"
+
 custom:
   - "docs/json/radarr/cf/custom-language-not-original-or-english.json"
   - "docs/json/radarr/cf/custom-release-title-dubbed.json"
   - "docs/json/sonarr/cf/custom-language-not-original-or-english.json"
   - "docs/json/sonarr/cf/custom-release-title-dubbed.json"
-
-additional_sync:
-  - "docs/Radarr/Radarr-collection-of-custom-formats.md"
-  - "docs/Sonarr/sonarr-collection-of-custom-formats.md"
-  - "metadata.json"
